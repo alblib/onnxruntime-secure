@@ -114,7 +114,7 @@ def ensure_msvc2022():
         # 3. Download the VS Community installer
         url = "https://aka.ms/vs/17/release/vs_community.exe"
         urlretrieve(url, str(tmp_path))
-        # 4. Execute the installer
+        # 4. Specify the installer as the setup utility
         vs_installer_utilities.setup = str(tmp_path)
         vs_installer_utilities.vswhere = ""
 
@@ -134,9 +134,11 @@ def ensure_msvc2022():
         )
         sys.exit(1)
 
-    # if not vs_installer_utilities.vswhere:
-    #     # 5. Remove the temp file when done
-    #     tmp_path.unlink()
+    else:
+        print("All required components are installed.")
+        print(f"Visual Studio 2022 installation path: {install_info.installationPath}")
+        print(f"Visual Studio Installer Utilities: {vs_installer_utilities.vswhere}, {vs_installer_utilities.setup}")
+        return True
 
 
 def ensure_ninja():
@@ -177,6 +179,12 @@ def ensure_ninja():
         else:
             print(f"Unsupported operating system: {system}")
             sys.exit(1)
+        print("Ninja build system installed successfully.")
+        # Return False to indicate that installation was performed and terminal needs to be restarted
+        return False
+    else:
+        print("Ninja build system is already installed.")
+        return True
 
 
 def ensure_xcode():
@@ -198,6 +206,9 @@ def ensure_xcode():
     if not is_xcode_installed():
         print("Xcode is not installed. Please install it from the App Store.")
         sys.exit(1)
+
+    print("Xcode command line tools are already installed.")
+    return True
 
 
 def ensure_cmake():
@@ -241,6 +252,12 @@ def ensure_cmake():
         else:
             print(f"Unsupported operating system: {system}")
             sys.exit(1)
+        print("CMake installed successfully.")
+        # Return False to indicate that installation was performed and terminal needs to be restarted
+        return False
+    else:   
+        print("CMake is already installed.")
+        return True
 
 
 def ensure_build_essential():
@@ -258,40 +275,75 @@ def ensure_build_essential():
         except subprocess.CalledProcessError:
             return False
 
-    def is_gcc_installed():
-        """
-        Check if GCC is installed.
-        """
-        try:
-            subprocess.run(["gcc", "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            return False
-
     if not is_build_essential_installed():
         print("build-essential is not installed. Installing build-essential...")
         result = subprocess.run(["sudo", "apt-get", "install", "-y", "build-essential"], check=True)
         if result.returncode != 0:
             print("Failed to install build-essential. Please install it manually.")
             sys.exit(1)
+        print("build-essential installed successfully.")
+        # Return False to indicate that installation was performed and terminal needs to be restarted
+        return False
+    else:
+        print("build-essential is already installed.")
+        return True
 
+
+def ensure_java():
+    """
+    Check if Java is installed on the system, and if not, install it.
+    """
+
+    def is_java_installed():
+        """
+        Check if Java is installed.
+        """
+        try:
+            subprocess.run(["java", "-version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False
+
+    if not is_java_installed():
+        system = platform.system()
+        if system == 'Windows':
+            subprocess.run(["winget", "install", "--id", "EclipseAdoptium.Temurin.17.JDK", "-e"], check=True)
+        elif system == 'Darwin':
+            subprocess.run(["brew", "install", "--cask","temurin"], check=True)
+        elif system == 'Linux':
+            subprocess.run(["sudo", "apt", "install", "-y", "openjdk-17-jdk"], check=True)
+        else:
+            print(f"Unsupported operating system: {system}")
+            sys.exit(1)
+        print("JDK installed successfully.")
+        return False
+    else:
+        print("JDK is already installed.")
+        return True
 
 def main():
-    ensure_cmake()
-    ensure_ninja()
+    """Main function to ensure all build tools are installed.
+    """
+    result = True
+    result &= ensure_cmake()
+    result &= ensure_ninja()
+    result &= ensure_java()
 
     system = platform.system()
     if system == 'Windows':
-        ensure_msvc2022()
-        print("Windows build tools installed successfully.")
+        result &= ensure_msvc2022()
     elif system == 'Linux':
-        ensure_build_essential()
-        print("Linux build tools installed successfully.")
+        result &= ensure_build_essential()
     elif system == 'Darwin':
-        ensure_xcode()
-        print("macOS build tools installed successfully.")
+        result &= ensure_xcode()
     else:
         print(f"Unsupported operating system: {system}")
+        sys.exit(1)
+
+    if result:
+        print("All build tools are installed and ready to use.")
+    else:
+        print("Some build tools were installed. Please restart your terminal to ensure they are available in the PATH.")
         sys.exit(1)
 
 
