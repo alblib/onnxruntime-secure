@@ -67,15 +67,15 @@ def check_vs2022():
     vs_installer_utilities_tuple_list = \
         [
             (
-                utilname,
+                util.name,
                 os.path.join(
                     pf86, 
                     "Microsoft Visual Studio",
                     "Installer",
-                    f"{utilname}.exe"
-                ) if utilname else ""
+                    f"{util.name}.exe"
+                ) if util.name else ""
             )
-            for utilname in fields(VSInstallerUtilities)
+            for util in fields(VSInstallerUtilities)
         ]
     vs_installer_utilities = VSInstallerUtilities(**dict(vs_installer_utilities_tuple_list))
 
@@ -89,7 +89,7 @@ def check_vs2022():
                     "-latest",
                     "-products", "*",
                     "-version", "[17.0,18.0)", # VS2022(17)
-                    "-property", installPropertyId
+                    "-property", installPropertyId.name
                 ],
                 capture_output=True, text=True
             )
@@ -303,7 +303,7 @@ def build_onnxruntime_windows():
                 '--cmake_extra_defines', 
                 'CMAKE_C_FLAGS="/Qspectre"', 
                 'CMAKE_CXX_FLAGS="/Qspectre"', 
-                'CMAKE_INSTALL_PREFIX="../../../onnxruntime-install/Windows/x64"',
+                f'CMAKE_INSTALL_PREFIX="../../../onnxruntime-install/Windows/{arch}"',
             ],
             cwd=os.path.join(deps_dir, 'onnxruntime-src')
         ).returncode:
@@ -313,4 +313,4 @@ def build_onnxruntime_windows():
             print(f'Building for Windows {arch}...Success.')
 
 
-# check_vs2022()
+check_vs2022()

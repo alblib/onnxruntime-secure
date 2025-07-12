@@ -1,0 +1,16 @@
+@echo off
+REM — change to the directory where this .bat lives (and switch drives if needed)
+cd /d "%~dp0"
+
+REM — now any relative paths below are relative to the script’s folder
+REM   for example, run an EXE in a subfolder called “bin”:
+cd ..
+mkdir _deps
+cd _deps 
+git clone https://github.com/microsoft/onnxruntime.git onnxruntime-src
+cd onnxruntime-src
+.\build.bat --config Release --build_dir ../onnxruntime-build/Windows/x64 --compile_no_warning_as_error --skip_submodule_sync --cmake_generator="Visual Studio 17 2022" --skip_tests --use_dml --build_shared_lib --cmake_extra_defines CMAKE_C_FLAGS="/Qspectre" CMAKE_CXX_FLAGS="/Qspectre" 
+.\build.bat --config Release --build_dir ../onnxruntime-build/Windows/ARM64 --arm64 --compile_no_warning_as_error --skip_submodule_sync --cmake_generator="Visual Studio 17 2022" --skip_tests --use_dml --build_shared_lib --cmake_extra_defines CMAKE_C_FLAGS="/Qspectre" CMAKE_CXX_FLAGS="/Qspectre" 
+
+REM — or call another batch/script in a subfolder
+REM call scripts\deploy.bat arg1 arg2
