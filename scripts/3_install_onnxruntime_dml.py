@@ -35,10 +35,10 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    root = args.root.resolve()
-    src_path = root / "_deps/onnxruntime-src"
-    build_path = root / "_deps/onnxruntime-build/Windows-DirectML"
-    install_path = root / "_deps/onnxruntime-install/Windows-DirectML"
+    root = args.root.resolve().absolute()
+    src_path = root / "_deps" / "onnxruntime-src"
+    build_path = root / "_deps" / "onnxruntime-build" / "Windows-DirectML"
+    install_path = root / "_deps" / "onnxruntime-install" / "Windows-DirectML"
 
     system = platform.system()
     ver = platform.release()
@@ -51,7 +51,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
     build_bat = src_path / "build.bat"
-    build_bat = build_bat.resolve().absolute()
     if not os.path.isfile(build_bat):
         print(f"Build script not found: {build_bat}")
         sys.exit(1)
@@ -71,8 +70,8 @@ if __name__ == "__main__":
         "arm64": ["--arm64"],
     }
     base_cmake_extra_defines = [
-        'CMAKE_C_FLAGS="/Qspectre"',
-        'CMAKE_CXX_FLAGS="/Qspectre"',
+        'CMAKE_C_FLAGS=/Qspectre',
+        'CMAKE_CXX_FLAGS=/Qspectre',
     ]
     build_dir = {
         "x64": build_path / "x64",
@@ -84,18 +83,18 @@ if __name__ == "__main__":
     }
 
     for arch in arch_options.keys():
-        install_dest = install_dir[arch].resolve().absolute()
+        install_dest = str(install_dir[arch])
         try:
-            install_dest = install_dest.relative_to(
-                    (build_dir[arch] / 'Release').resolve().absolute()
-                    )
+            install_dest = os.path.relpath(
+                install_dest, str(build_dir[arch] / 'Release'))
         except ValueError:
             pass
+        install_dest = str(install_dest)
         args = base_options + arch_options[arch] + [
             '--build_dir', str(build_dir[arch]),
             '--target', 'install',
             '--cmake_extra_defines', *base_cmake_extra_defines, 
-            f'CMAKE_INSTALL_PREFIX="{install_dest}"',
+            f'CMAKE_INSTALL_PREFIX={install_dest}',
         ]
         print(f"Building ONNX Runtime for {arch}...")
         result = subprocess.run([str(build_bat)] + args, check=True)
