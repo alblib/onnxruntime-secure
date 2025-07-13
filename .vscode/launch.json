@@ -1,0 +1,38 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Download Android SDK",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/2_download_android_sdk.py",
+      "console": "integratedTerminal",
+      "args": [
+        // for a positional "root" arg:
+        "${workspaceFolder}",
+      ]
+    },
+    {
+      "name": "Download OpenCL Source",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/2_download_opencl_src.py",
+      "console": "integratedTerminal",
+      "args": [
+        // for a positional "root" arg:
+        "${workspaceFolder}",
+      ]
+    },
+    {
+      "name": "Download ONNX Runtime Source",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/2_download_onnxruntime_src.py",
+      "console": "integratedTerminal",
+      "args": [
+        // for a positional "root" arg:
+        "${workspaceFolder}",
+      ]
+    }
+  ]
+}

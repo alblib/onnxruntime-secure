@@ -1,6 +1,5 @@
-import os
-import shutil
-import subprocess
+import os, shutil, subprocess, argparse
+from pathlib import Path
 
 def run(cmd, cwd=None):
     print(f"[RUN] {' '.join(cmd)}")
@@ -48,11 +47,23 @@ def ensure_opencl_src_repo(root):
         os.makedirs(os.path.dirname(CLONE_DIR), exist_ok=True)
         clone_repo(REPO_URL, CLONE_DIR)
 
-def build_opencl(root):
-    print("[TODO] Add OpenCL build steps here.")
-    pass
-
 if __name__ == "__main__":
-    root = os.path.abspath(".")
+
+    parser = argparse.ArgumentParser(
+        prog="2_download_opencl_src", 
+        description="Ensure OpenCL source repository is cloned and updated."
+    )
+
+    # Positional argument "path"
+    parser.add_argument(
+        "root",
+        type=Path,
+        metavar="root",
+        help="root directory of onnxruntime-secure repository"
+    )
+
+    # Parse arguments; will auto-exit and print usage on error
+    args = parser.parse_args()
+    root = args.root.resolve()
+
     ensure_opencl_src_repo(root)
-    build_opencl(root)

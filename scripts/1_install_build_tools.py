@@ -322,8 +322,10 @@ def ensure_java():
         return True
 
 def main():
-    """Main function to ensure all build tools are installed.
     """
+    Main function to ensure all build tools are installed.
+    """
+
     result = True
     result &= ensure_cmake()
     result &= ensure_ninja()

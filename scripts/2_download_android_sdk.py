@@ -1,4 +1,5 @@
-import os, sys, platform, zipfile, hashlib, shutil, subprocess
+import os, sys, platform, zipfile, hashlib, shutil, subprocess, argparse
+from pathlib import Path
 from urllib.request import urlretrieve
 
 ANDROID_COMMAND_LINE_TOOLS_VERSION = "13114758"
@@ -132,4 +133,22 @@ def install_android_sdk_tools(root):
     print("Android Command Line Tools are ready to use.")
 
 if __name__ == "__main__":
-    install_android_sdk_tools(os.path.join(os.path.dirname(__file__), ".."))
+
+    parser = argparse.ArgumentParser(
+        prog="2_download_android_sdk", 
+        description="Ensure Android SDK tools are downloaded and installed."
+    )
+
+    # Positional argument "path"
+    parser.add_argument(
+        "root",
+        type=Path,
+        metavar="root",
+        help="root directory of onnxruntime-secure repository"
+    )
+
+    # Parse arguments; will auto-exit and print usage on error
+    args = parser.parse_args()
+    root = args.root.resolve()
+
+    install_android_sdk_tools(root)
