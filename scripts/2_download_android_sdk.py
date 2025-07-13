@@ -92,6 +92,7 @@ def ensure_android_command_line_tools(root):
     cmdline_base_path = os.path.join(root, "_deps/android-cmdline-tools")
     cmdline_path = os.path.join(cmdline_base_path, "cmdline-tools")
     sdkmanager_path = os.path.join(cmdline_path, "bin", ANDROID_SDKMANAGER_FILENAME)
+    sdkmanager_path = os.path.abspath(sdkmanager_path)
 
     if os.path.isfile(sdkmanager_path) and sha1sum(sdkmanager_path) == ANDROID_SDKMANAGER_SHA1:
         print("Android SDK Manager is already installed and verified.")
