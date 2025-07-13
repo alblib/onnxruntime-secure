@@ -1,20 +1,65 @@
-import sys, platform, os, argparse
+import sys, platform, os, argparse, re
 from pathlib import Path
-from enum import Enum
 import subprocess
+from dataclasses import make_dataclass, fields
 
-class Architecture(Enum):
-    X86 = "--x86"
-    X64 = ""
-    ARM64 = "--arm64"
-    ARM32 = "--arm"
+AndroidSDKPathClass = make_dataclass('AndroidSDKPathClass', [
+    ('SDKPath', Path), ('NDKPath', Path),
+    ('SDKAPIVersion', str), ('NDKVersion', str)
+])
 
-class ExecutionProvider(Enum):
-    DirectML = "--use_dml"
-    CUDA = "--use_cuda"
-    oneDNN = "--use_dnnl"
-    NNAPI = "--use_nnapi"
-    CoreML = "--use_coreml"
+def get_android_sdk_paths(root):
+    """
+    Get the Android SDK and NDK paths from the root directory.
+    :param root: The root directory of the onnxruntime-secure repository.
+    :return: An instance of AndroidSDKPathClass with SDK and NDK paths.
+    """
+
+    # Check if the Android SDK path exists and get minimum API version
+    ## SDKPath = sdk_path, SDKAPIVersion = min_api_version (like '22')
+    sdk_path = root / '_deps' / 'android-sdk'
+    if not sdk_path.exists():
+        print("Android SDK path does not exist.")
+        sys.exit(1)
+    if not (sdk_path / 'platforms').exists():
+        print("Android SDK platforms directory does not exist.")
+        sys.exit(1)
+    platform_regex = re.compile(r'android-(\d+)')
+    platform_list = []
+    for platform_name in os.listdir(str(sdk_path / 'platforms')):
+        m = platform_regex.match(platform_name)
+        if m:
+            sdk_api_version = m.group(1)
+            platform_list.append((sdk_api_version, platform_name))
+    if not platform_list:
+        print("No valid Android platforms found in SDK.")
+        sys.exit(1)
+    min_api_version, min_platform_name = min(platform_list, key=lambda x: x[0])
+    
+    # Check if the NDK path exists and get its version
+    ## NDKPath = ndk_path, NDKVersion = ndk_version (like '27.2.12479018')
+    ndk_parent_path = sdk_path / 'ndk'
+    if not ndk_parent_path.exists():
+        print("Android NDK path does not exist.")
+        sys.exit(1)
+    ndk_version = None
+    try:
+        ndk_version = max(
+            (name for name in os.listdir(ndk_parent_path) if os.path.isdir(os.path.join(ndk_parent_path, name))),
+            key=lambda x: list(map(int, x.split(".")))
+        )
+    except ValueError:
+        print("No valid Android NDK version found.")
+        sys.exit(1)
+    ndk_path = ndk_parent_path / ndk_version
+
+    return AndroidSDKPathClass(
+        SDKPath=str(sdk_path.resolve().absolute()),
+        NDKPath=str(ndk_path.resolve().absolute()),
+        SDKAPIVersion=min_api_version, 
+        NDKVersion=ndk_version
+    )
+
 
 def flatten(seq):
     out = []
@@ -85,6 +130,7 @@ if __name__ == "__main__":
     build_path = root / "_deps" / "onnxruntime-build" / "Android"
     install_path = root / "_deps" / "onnxruntime-install" / "Android"
 
+    android_sdk_info = get_android_sdk_paths(root)
 
     base_options = [
         '--android', 
@@ -94,9 +140,9 @@ if __name__ == "__main__":
         '--compile_no_warning_as_error',
         '--skip_submodule_sync',
         '--skip_tests',
-        '--android_api', '22',
-        '--android_sdk_path', str(root / '_deps' / 'android-sdk'),
-        '--android_ndk_path', str(root / '_deps' / 'android-sdk' / 'ndk' / '27.2.12479018'),
+        '--android_api', android_sdk_info.SDKAPIVersion,
+        '--android_sdk_path', android_sdk_info.SDKPath,
+        '--android_ndk_path', android_sdk_info.NDKPath,
     ]
     if args.build_shared_lib:
         base_options.append('--build_shared_lib')
@@ -112,8 +158,8 @@ if __name__ == "__main__":
         ]
         cmake_options = {
             "CMAKE_INSTALL_PREFIX": install_path / arch,
-            "CMAKE_C_FLAGS_RELEASE": "-O2 -g0",
-            "CMAKE_CXX_FLAGS_RELEASE": "-O2 -g0",
+            "CMAKE_C_FLAGS_RELEASE": "-O2 -g0 -Wno-unused-parameter -Wno-unused-variable",
+            "CMAKE_CXX_FLAGS_RELEASE": "-O2 -g0 -Wno-unused-parameter -Wno-unused-variable",
             "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "-s",
         }
         if args.no_neon:
