@@ -158,8 +158,8 @@ if __name__ == "__main__":
         ]
         cmake_options = {
             "CMAKE_INSTALL_PREFIX": install_path / arch,
-            "CMAKE_C_FLAGS_RELEASE": "-O2 -g0 -Wno-unused-parameter -Wno-unused-variable",
-            "CMAKE_CXX_FLAGS_RELEASE": "-O2 -g0 -Wno-unused-parameter -Wno-unused-variable",
+            "CMAKE_C_FLAGS_RELEASE": "-O2 -g0 -Wno-unused-parameter -Wno-unused-variable -mspeculative-load-hardening -mindirect-branch=thunk -mindirect-branch-register -mfunction-return=thunk",
+            "CMAKE_CXX_FLAGS_RELEASE": "-O2 -g0 -Wno-unused-parameter -Wno-unused-variable -mspeculative-load-hardening -mindirect-branch=thunk -mindirect-branch-register -mfunction-return=thunk",
             "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "-s",
         }
         if args.no_neon:
