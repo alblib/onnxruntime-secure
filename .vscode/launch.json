@@ -46,8 +46,7 @@
         // for a positional "root" arg:
         "${workspaceFolder}",
         "--nnapi",
-        "--arch", "arm64-v8a",
-        "--arch", "armeabi-v7a",
+        "--arch", "arm64-v8a", "armeabi-v7a",
       ]
     }
   ]

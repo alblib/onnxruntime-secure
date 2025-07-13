@@ -20,11 +20,11 @@ def clone_repo(repo_url, clone_dir):
     run(["git", "clone", "--recursive", repo_url, clone_dir])
 
 def reset_and_update(clone_dir):
-    run(["git", "fetch", "--all"], cwd=clone_dir)
+    run(["git", "fetch", "--all", "--tags"], cwd=clone_dir)
     run(["git", "reset", "--hard", "origin/main"], cwd=clone_dir)
     run(["git", "submodule", "update", "--init", "--recursive", "--force"], cwd=clone_dir)
 
-def ensure_feature_repo(url, root, feature_name):
+def ensure_feature_repo(url, ref, root, feature_name):
     """
     Ensure the specified feature repository is cloned and updated.
     :param url: URL of the repository to clone.
@@ -54,8 +54,52 @@ def ensure_feature_repo(url, root, feature_name):
         os.makedirs(os.path.dirname(CLONE_DIR), exist_ok=True)
         clone_repo(REPO_URL, CLONE_DIR)
 
+    checkout_ref(CLONE_DIR, ref)
+
     return CLONE_DIR
 
+
+# helpers for checking out a tag or branch by name
+def ref_exists(path, ref, namespace):
+    """Return True if ref exists under refs/{namespace}/{ref}."""
+    try:
+        subprocess.run(
+            ["git", "show-ref", "--verify", f"refs/{namespace}/{ref}"],
+            cwd=path,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+def checkout_ref(clone_dir, ref):
+    """
+    Checkout the given tag or branch in the repo:
+      - If it's a tag → detached HEAD at that tag
+      - If it's a remote branch → local tracking branch
+    """
+    # make sure we have all remotes/tags
+    run(["git", "fetch", "--all", "--tags"], cwd=clone_dir)
+
+    # 1) tag?
+    if ref_exists(clone_dir, ref, "tags"):
+        run(["git", "checkout", f"tags/{ref}"], cwd=clone_dir)
+        # now sync submodules to the tag’s recorded commits
+        run(["git", "submodule", "update", "--init", "--recursive", "--force"], cwd=clone_dir)
+        return
+
+    # 2) remote branch?
+    if ref_exists(clone_dir, ref, "remotes/origin"):
+        # if local branch exists already
+        if ref_exists(clone_dir, ref, "heads"):
+            run(["git", "checkout", ref], cwd=clone_dir)
+        else:
+            run(["git", "checkout", "-b", ref, f"origin/{ref}"], cwd=clone_dir)
+        # and sync its submodules
+        run(["git", "submodule", "update", "--init", "--recursive", "--force"], cwd=clone_dir)
+        return
 
 
 if __name__ == "__main__":
@@ -87,12 +131,14 @@ if __name__ == "__main__":
     if "opencl" in args.features:
         ensure_feature_repo(
             "https://github.com/KhronosGroup/OpenCL-SDK.git",
+            "v2024.10.24",
             root, 
             "opencl-src"
             )
     if "onnxruntime" in args.features:
         ensure_feature_repo(
             "https://github.com/microsoft/onnxruntime.git",
+            "v1.22.1",
             root,
             "onnxruntime-src"
         )
