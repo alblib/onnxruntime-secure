@@ -24,9 +24,16 @@ def reset_and_update(clone_dir):
     run(["git", "reset", "--hard", "origin/main"], cwd=clone_dir)
     run(["git", "submodule", "update", "--init", "--recursive", "--force"], cwd=clone_dir)
 
-def ensure_opencl_src_repo(root):
-    REPO_URL = "https://github.com/KhronosGroup/OpenCL-SDK.git"
-    CLONE_DIR = os.path.join(root, "_deps", "opencl-src")
+def ensure_feature_repo(url, root, feature_name):
+    """
+    Ensure the specified feature repository is cloned and updated.
+    :param url: URL of the repository to clone.
+    :param root: The onnxruntime-secure root directory.
+    :param feature_name: The repository is cloned into '{root}/_deps/{feature_name}'.
+    :return: Path to the cloned repository.
+    """
+    REPO_URL = url
+    CLONE_DIR = os.path.join(root, "_deps", feature_name)
 
     if os.path.isdir(CLONE_DIR):
         if is_git_repo(CLONE_DIR):
@@ -47,11 +54,15 @@ def ensure_opencl_src_repo(root):
         os.makedirs(os.path.dirname(CLONE_DIR), exist_ok=True)
         clone_repo(REPO_URL, CLONE_DIR)
 
+    return CLONE_DIR
+
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
-        prog="2_download_opencl_src", 
-        description="Ensure OpenCL source repository is cloned and updated."
+        prog="2_download_sources",
+        description="Ensure source repositories for APIs are cloned and updated."
     )
 
     # Positional argument "path"
@@ -62,8 +73,26 @@ if __name__ == "__main__":
         help="root directory of onnxruntime-secure repository"
     )
 
+    parser.add_argument(
+        "features",
+        nargs="+",                          # <-- require at least one
+        choices=["opencl", "onnxruntime"],
+        help="one or more features to enable"
+    )
+
     # Parse arguments; will auto-exit and print usage on error
     args = parser.parse_args()
     root = args.root.resolve()
 
-    ensure_opencl_src_repo(root)
+    if "opencl" in args.features:
+        ensure_feature_repo(
+            "https://github.com/KhronosGroup/OpenCL-SDK.git",
+            root, 
+            "opencl-src"
+            )
+    if "onnxruntime" in args.features:
+        ensure_feature_repo(
+            "https://github.com/microsoft/onnxruntime.git",
+            root,
+            "onnxruntime-src"
+        )

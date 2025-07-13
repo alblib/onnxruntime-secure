@@ -13,25 +13,16 @@
       ]
     },
     {
-      "name": "Download OpenCL Source",
+      "name": "Download API Sources",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/2_download_opencl_src.py",
+      "program": "${workspaceFolder}/scripts/2_download_sources.py",
       "console": "integratedTerminal",
       "args": [
         // for a positional "root" arg:
         "${workspaceFolder}",
-      ]
-    },
-    {
-      "name": "Download ONNX Runtime Source",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/scripts/2_download_onnxruntime_src.py",
-      "console": "integratedTerminal",
-      "args": [
-        // for a positional "root" arg:
-        "${workspaceFolder}",
+        "opencl",
+        "onnxruntime"
       ]
     }
   ]
