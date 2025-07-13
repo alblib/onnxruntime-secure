@@ -102,4 +102,4 @@ if __name__ == "__main__":
             print(f"Failed to build ONNX Runtime for {arch}.")
             sys.exit(result.returncode)
         else:
-            print(f"ONNX Runtime for {arch} built and installed to {install_dest}")
+            print(f"ONNX Runtime for {arch} built and installed to {str(install_dir[arch])}")

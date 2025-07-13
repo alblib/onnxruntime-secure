@@ -35,6 +35,20 @@
         // for a positional "root" arg:
         "${workspaceFolder}"
       ]
+    },
+    {
+      "name": "Install ONNX Runtime Android",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/3_install_onnxruntime_android.py",
+      "console": "integratedTerminal",
+      "args": [
+        // for a positional "root" arg:
+        "${workspaceFolder}",
+        "--nnapi",
+        "--arch", "arm64-v8a",
+        "--arch", "armeabi-v7a",
+      ]
     }
   ]
 }
