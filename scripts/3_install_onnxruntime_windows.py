@@ -84,14 +84,14 @@ if __name__ == "__main__":
                 install_dest, build_dest)
         except ValueError:
             pass
-        args = base_options + arch_options[arch] + [
+        options = base_options + arch_options[arch] + [
             '--build_dir', build_dest,
             '--target', 'install',
             '--cmake_extra_defines', *base_cmake_extra_defines, 
             f'CMAKE_INSTALL_PREFIX={install_dest}',
         ]
         print(f"Building ONNX Runtime for {arch}...")
-        result = subprocess.run([str(build_bat)] + args, check=True)
+        result = subprocess.run([str(build_bat)] + options, check=True)
         if result.returncode != 0:
             print(f"Failed to build ONNX Runtime for {arch}.")
             sys.exit(result.returncode)
