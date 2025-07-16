@@ -3,19 +3,6 @@ from pathlib import Path
 from enum import Enum
 import subprocess
 
-class Architecture(Enum):
-    X86 = "--x86"
-    X64 = ""
-    ARM64 = "--arm64"
-    ARM32 = "--arm"
-
-class ExecutionProvider(Enum):
-    DirectML = "--use_dml"
-    CUDA = "--use_cuda"
-    oneDNN = "--use_dnnl"
-    NNAPI = "--use_nnapi"
-    CoreML = "--use_coreml"
-
 
 if __name__ == "__main__":
     """
@@ -23,15 +10,20 @@ if __name__ == "__main__":
     """
 
     parser = argparse.ArgumentParser(
-        prog="3_install_onnxruntime_dml",
-        description="Build and install onnxruntime with DirectML support"
+        prog="3_install_onnxruntime_windows",
+        description="Build and install onnxruntime for Windows"
     )
-
     parser.add_argument(
         "root",
         type=Path,
         metavar="root",
         help="root directory of onnxruntime-secure repository"
+    )
+    parser.add_argument(
+        "--arch",
+        nargs="+",                          # <-- require at least one
+        choices=["x86", "x64", "arm64", "arm64ec", "arm32"],
+        help="one or more architectures to build for"
     )
 
     args = parser.parse_args()
@@ -62,12 +54,14 @@ if __name__ == "__main__":
         "--compile_no_warning_as_error",
         "--skip_submodule_sync",
         "--skip_tests",
-        "--use_dml",
         "--build_shared_lib",
     ]
     arch_options = {
-        "x64": [],
-        "arm64": ["--arm64"],
+        "x64": ['--use_dml'],
+        "x86": ['--x86', '--use_dml'],
+        "arm32": ['--arm'],
+        "arm64": ['--arm64', '--use_dml'],
+        "arm64ec": ['--arm64ec', '--use_dml'],
     }
     base_cmake_extra_defines = [
         'CMAKE_C_FLAGS=/Qspectre',
@@ -83,15 +77,15 @@ if __name__ == "__main__":
     }
 
     for arch in arch_options.keys():
-        install_dest = str(install_dir[arch])
+        build_dest = str(build_path / arch)
+        install_dest = str(install_path / arch)
         try:
             install_dest = os.path.relpath(
-                install_dest, str(build_dir[arch] / 'Release'))
+                install_dest, build_dest)
         except ValueError:
             pass
-        install_dest = str(install_dest)
         args = base_options + arch_options[arch] + [
-            '--build_dir', str(build_dir[arch]),
+            '--build_dir', build_dest,
             '--target', 'install',
             '--cmake_extra_defines', *base_cmake_extra_defines, 
             f'CMAKE_INSTALL_PREFIX={install_dest}',

@@ -60,7 +60,6 @@ def get_android_sdk_paths(root):
         NDKVersion=ndk_version
     )
 
-
 def flatten(seq):
     out = []
     for e in seq:
@@ -72,7 +71,7 @@ def flatten(seq):
 
 def build(root, options, cmake_options):
     src_path = (root / "_deps" / "onnxruntime-src").resolve().absolute()
-    build_script = src_path / "build.bat" if platform.system() == 'Windows' else src_path / "build"
+    build_script = src_path / "build.bat" if platform.system() == 'Windows' else src_path / "build.sh"
     build_script = build_script.resolve().absolute()
     options = [str(os.path.abspath(x)) if isinstance(x, os.PathLike) else x
                for x in flatten(options)]
@@ -119,7 +118,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--build_shared_lib",
+        "--build-shared-lib",
         action="store_true",
         help="Enable building shared library"
     )
