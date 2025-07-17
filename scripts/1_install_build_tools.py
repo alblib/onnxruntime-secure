@@ -2,9 +2,10 @@ import os, sys, platform, subprocess, tempfile
 from pathlib import Path
 from urllib.request import urlretrieve
 from dataclasses import make_dataclass, fields
+import zipfile
+
 
 def ensure_msvc2022():
-
     VSInstallerUtilities = make_dataclass('VSInstallerUtilities', [
         ('vswhere', str), ('setup', str)
     ])
@@ -141,52 +142,6 @@ def ensure_msvc2022():
         return True
 
 
-def ensure_ninja():
-    def check_ninja():
-        try:
-            result = subprocess.run(["ninja", "--version"], check=True)
-            return result.returncode == 0
-        except FileNotFoundError:
-            print("Ninja build system is not installed. Please install it.")
-            return False
-
-    if not check_ninja():
-        print("Installing Ninja build system...")
-        system = platform.system()
-        if system == 'Windows':
-            result = subprocess.run([
-                "winget", "install", "--exact",
-                "--id", "Ninja-build.Ninja",
-                ], check=True)
-            if result.returncode != 0:
-                print("Failed to install Ninja. Please install it manually from https://ninja-build.org/")
-                sys.exit(1)
-        elif system == 'Linux':
-            result = subprocess.run([
-                "sudo", "apt-get", "install", "-y",
-                "ninja-build"
-                ], check=True)
-            if result.returncode != 0:
-                print("Failed to install Ninja. Please install it manually from https://ninja-build.org/")
-                sys.exit(1)
-        elif system == 'Darwin':
-            result = subprocess.run([
-                "brew", "install", "ninja"
-                ], check=True)
-            if result.returncode != 0:
-                print("Failed to install Ninja. Please install it manually from https://ninja-build.org/")
-                sys.exit(1)
-        else:
-            print(f"Unsupported operating system: {system}")
-            sys.exit(1)
-        print("Ninja build system installed successfully.")
-        # Return False to indicate that installation was performed and terminal needs to be restarted
-        return False
-    else:
-        print("Ninja build system is already installed.")
-        return True
-
-
 def ensure_xcode():
     """
     Check if Xcode is installed on macOS, and if not, prompt the user to install it.
@@ -209,55 +164,6 @@ def ensure_xcode():
 
     print("Xcode command line tools are already installed.")
     return True
-
-
-def ensure_cmake():
-    """
-    Check if CMake is installed on the system, and if not, install it.
-    """
-
-    def is_cmake_installed():
-        """
-        Check if CMake is installed.
-        """
-        try:
-            subprocess.run(["cmake", "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            return False
-
-    if not is_cmake_installed():
-        system = platform.system()
-        if system == 'Windows':
-            print("CMake is not installed. Installing CMake using winget...")
-            result = subprocess.run([
-                "winget", "install", "--exact",
-                "--id", "Kitware.CMake"
-                ], check=True)
-            if result.returncode != 0:
-                print("Failed to install CMake. Please install it manually from https://cmake.org/download/")
-                sys.exit(1)
-        elif system == 'Linux':
-            print("CMake is not installed. Installing CMake using apt-get...")
-            result = subprocess.run(["sudo", "apt-get", "install", "-y", "cmake"], check=True)
-            if result.returncode != 0:
-                print("Failed to install CMake. Please install it manually from https://cmake.org/download/")
-                sys.exit(1)
-        elif system == 'Darwin':
-            print("CMake is not installed. Installing CMake using Homebrew...")
-            result = subprocess.run(["brew", "install", "--cask", "cmake-app"], check=True)
-            if result.returncode != 0:
-                print("Failed to install CMake. Please install it manually from https://cmake.org/download/")
-                sys.exit(1)
-        else:
-            print(f"Unsupported operating system: {system}")
-            sys.exit(1)
-        print("CMake installed successfully.")
-        # Return False to indicate that installation was performed and terminal needs to be restarted
-        return False
-    else:   
-        print("CMake is already installed.")
-        return True
 
 
 def ensure_build_essential():
@@ -289,37 +195,175 @@ def ensure_build_essential():
         return True
 
 
-def ensure_java():
-    """
-    Check if Java is installed on the system, and if not, install it.
-    """
+Package = make_dataclass('Package', [
+    ('name', str),
+    ('command', str), 
+    ('winget_package_name', str),
+    ('brew_package_name', str),
+    ('apt_package_name', str),
+    ('is_brew_cask', bool),
+    ('url', str)
+])
 
-    def is_java_installed():
-        """
-        Check if Java is installed.
-        """
+def ensure_package(package):
+    def check_package():
         try:
-            subprocess.run(["java", "-version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
+            result = subprocess.run([package.command, "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return result.returncode == 0
+        except FileNotFoundError:
+            print(f"{package.name} is not installed. Please install it.")
             return False
 
-    if not is_java_installed():
+    fail_message = f'Failed to install {package.name}.'
+    if package.url:
+        fail_message += f' Please install it manually from {package.url}'
+    else:
+        fail_message += ' Please install it manually.'
+
+    if not check_package():
         system = platform.system()
         if system == 'Windows':
-            subprocess.run(["winget", "install", "--id", "EclipseAdoptium.Temurin.17.JDK", "-e"], check=True)
-        elif system == 'Darwin':
-            subprocess.run(["brew", "install", "--cask","temurin"], check=True)
+            if not package.winget_package_name:
+                return False
+            print(f"Installing {package.name} ...")
+            result = subprocess.run([
+                "winget", "install", "--exact",
+                "--id", package.winget_package_name,
+                ], check=True)
+            if result.returncode != 0:
+                print(fail_message)
+                sys.exit(1)
         elif system == 'Linux':
-            subprocess.run(["sudo", "apt", "install", "-y", "openjdk-17-jdk"], check=True)
+            if not package.apt_package_name:
+                return False
+            print(f"Installing {package.name} ...")
+            result = subprocess.run([
+                "sudo", "apt-get", "install", "-y",
+                package.apt_package_name
+                ], check=True)
+            if result.returncode != 0:
+                print(fail_message)
+                sys.exit(1)
+        elif system == 'Darwin':
+            if not package.brew_package_name:
+                return False
+            print(f"Installing {package.name} ...")
+            runner = ['brew', 'install']
+            if package.is_brew_cask:
+                runner.append('--cask')
+            runner.append(package.brew_package_name)
+            result = subprocess.run(runner, check=True)
+            if result.returncode != 0:
+                print(fail_message)
+                sys.exit(1)
         else:
             print(f"Unsupported operating system: {system}")
             sys.exit(1)
-        print("JDK installed successfully.")
+        print(f"{package.name} installed successfully.")
+        # Return False to indicate that installation was performed and terminal needs to be restarted
         return False
     else:
-        print("JDK is already installed.")
+        print(f"{package.name} is already installed.")
         return True
+
+def ensure_ninja():
+    return ensure_package(
+        Package(
+            name='Ninja',
+            command='ninja',
+            winget_package_name='Ninja-build.Ninja',
+            apt_package_name='ninja-build',
+            brew_package_name='ninja',
+            is_brew_cask=False,
+            url='https://ninja-build.org/'
+        )
+    )
+    
+def ensure_cmake():
+    return ensure_package(
+        Package(
+            name='CMake',
+            command='cmake',
+            winget_package_name='Kitware.CMake',
+            apt_package_name='cmake',
+            brew_package_name='cmake-app',
+            is_brew_cask=True,
+            url='https://cmake.org/download/'
+        )
+    )
+
+
+def ensure_java():
+    return ensure_package(
+        Package(
+            name='Java JDK',
+            command='java',
+            winget_package_name='EclipseAdoptium.Temurin.17.JDK',
+            apt_package_name='openjdk-17-jdk',
+            brew_package_name='temurin',
+            is_brew_cask=True,
+            url='https://www.java.com/'
+        )
+    )
+
+
+def ensure_android_sdkmanager():
+    if not ensure_java():
+        return False
+
+    if not ensure_package(
+        Package(
+            name='Android SDK',
+            command='sdkmanager',
+            winget_package_name='',
+            apt_package_name='sdkmanager',
+            brew_package_name='android-commandlinetools',
+            is_brew_cask=True,
+            url='https://developer.android.com/studio'
+        )
+    ):
+        pf = os.environ.get("ProgramFiles")
+        AndroidFolder = os.path.join(pf, 'Android')
+        if not os.path.exists(os.path.join(AndroidFolder, 'cmdline-tools/sdkmanager.bat')):
+            if not os.path.exists(AndroidFolder):
+                os.makedirs(AndroidFolder)
+            url = f"https://dl.google.com/android/repository/commandlinetools-win-13114758_latest.zip"
+            try:
+                response = urlretrieve(url, os.path.join(AndroidFolder, 'android-cmdline-tools.zip'))
+            except:
+                return False
+            if response.getcode() != 200:
+                return False
+            try:
+                with zipfile.ZipFile(os.path.join(AndroidFolder, 'android-cmdline-tools.zip'), 'r') as zip_ref:
+                    zip_ref.extractall(AndroidFolder)
+            except:
+                if os.path.exists(os.path.join(AndroidFolder, 'android-cmdline-tools.zip')):
+                    os.remove(os.path.join(AndroidFolder, 'android-cmdline-tools.zip'))
+                return False
+        sdkmanager = os.path.join(AndroidFolder, 'cmdline-tools/bin/sdkmanager.bat')
+        result = subprocess.run([
+            sdkmanager, 
+            "--install", 
+            "platform-tools", 
+            "platforms;android-22", 
+            "build-tools;22.0.1", 
+            "ndk;27.2.12479018",
+            f"--sdk_root={AndroidFolder}",
+            ], check=True)
+    else:
+        sdkmanager = 'sdkmanager'
+        result = subprocess.run([
+            'sdkmanager', 
+            "--install", 
+            "platform-tools", 
+            "platforms;android-22", 
+            "build-tools;22.0.1", 
+            "ndk;27.2.12479018",
+            ], check=True)
+        
+    return result.returncode == 0
+
 
 def main():
     """
@@ -329,7 +373,6 @@ def main():
     result = True
     result &= ensure_cmake()
     result &= ensure_ninja()
-    result &= ensure_java()
 
     system = platform.system()
     if system == 'Windows':
@@ -341,6 +384,8 @@ def main():
     else:
         print(f"Unsupported operating system: {system}")
         sys.exit(1)
+
+    result &= ensure_android_sdkmanager()
 
     if result:
         print("All build tools are installed and ready to use.")
