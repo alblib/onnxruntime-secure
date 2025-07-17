@@ -60,6 +60,8 @@ if __name__ == "__main__":
     base_options = [
         '--config', 'Release', 
         '--skip_tests',
+        '--enable_wasm_threads',
+        '--enable_wasm_simd',
     ]
     if args.build_static_lib:
         base_options.append('--build_wasm_static_lib')
@@ -71,8 +73,6 @@ if __name__ == "__main__":
         install_path = install_path / 'shared'
     if args.webnn:
         base_options += [
-            '--enable_wasm_threads',
-            '--enable_wasm_simd',
             '--use_jsep',
             '--use_webnn'
         ]

@@ -29,8 +29,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     root = args.root.resolve().absolute()
     src_path = root / "_deps" / "onnxruntime-src"
-    build_path = root / "_deps" / "onnxruntime-build" / "Windows-DirectML"
-    install_path = root / "_deps" / "onnxruntime-install" / "Windows-DirectML"
+    build_path = root / "_deps" / "onnxruntime-build" / "Windows"
+    install_path = root / "_deps" / "onnxruntime-install" / "Windows"
 
     system = platform.system()
     ver = platform.release()

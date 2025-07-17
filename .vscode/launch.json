@@ -57,9 +57,7 @@
       "console": "integratedTerminal",
       "args": [
         // for a positional "root" arg:
-        "${workspaceFolder}",
-        "--webnn",
-        "--build_static_lib"
+        "${workspaceFolder}"
       ]
     }
   ]
