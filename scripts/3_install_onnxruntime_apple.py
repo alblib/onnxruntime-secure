@@ -10,8 +10,8 @@ if __name__ == "__main__":
     """
 
     parser = argparse.ArgumentParser(
-        prog="3_install_onnxruntime_windows",
-        description="Build and install onnxruntime for Windows"
+        prog="3_install_onnxruntime_apple",
+        description="Build and install onnxruntime for macOS/iOS"
     )
     parser.add_argument(
         "root",
@@ -70,6 +70,11 @@ if __name__ == "__main__":
     cmake_extra_defines = []
     if args.build_shared_lib:
         base_options.append('--build_shared_lib')
+        build_path = build_path / 'shared'
+        install_path = install_path / 'shared'
+    else:
+        build_path = build_path / 'static'
+        install_path = install_path / 'static'
     if args.ios:
         base_options += [
             '--ios', 

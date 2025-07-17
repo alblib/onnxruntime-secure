@@ -369,17 +369,16 @@ def ensure_android_sdkmanager():
             url='https://developer.android.com/studio'
         )
     ):
-        pf = os.environ.get("ProgramFiles")
-        AndroidFolder = os.path.join(pf, 'Android')
+        uf = os.environ.get("USERPROFILE")
+        AndroidFolder = os.path.join(uf, 'AndroidSDK')
         if not os.path.exists(os.path.join(AndroidFolder, 'cmdline-tools/sdkmanager.bat')):
+            print('Installing Android SDK Manager...')
             if not os.path.exists(AndroidFolder):
                 os.makedirs(AndroidFolder)
             url = f"https://dl.google.com/android/repository/commandlinetools-win-13114758_latest.zip"
             try:
-                response = urlretrieve(url, os.path.join(AndroidFolder, 'android-cmdline-tools.zip'))
+                urlretrieve(url, os.path.join(AndroidFolder, 'android-cmdline-tools.zip'))
             except:
-                return False
-            if response.getcode() != 200:
                 return False
             try:
                 with zipfile.ZipFile(os.path.join(AndroidFolder, 'android-cmdline-tools.zip'), 'r') as zip_ref:
@@ -388,6 +387,10 @@ def ensure_android_sdkmanager():
                 if os.path.exists(os.path.join(AndroidFolder, 'android-cmdline-tools.zip')):
                     os.remove(os.path.join(AndroidFolder, 'android-cmdline-tools.zip'))
                 return False
+            os.remove(os.path.join(AndroidFolder, 'android-cmdline-tools.zip'))
+            print('Android SDK Manager installed successfully.')
+        else:
+            print('Android SDK Manager is already installed.')
         sdkmanager = os.path.join(AndroidFolder, 'cmdline-tools/bin/sdkmanager.bat')
         result = subprocess.run([
             sdkmanager, 
@@ -423,7 +426,7 @@ def main():
     )
 
     parser.add_argument(
-        "--install_android_sdk",
+        "--install-android-sdk",
         action="store_true",
         help="Install Android SDK"
     )

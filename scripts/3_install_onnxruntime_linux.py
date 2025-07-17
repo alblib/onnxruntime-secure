@@ -3,41 +3,6 @@ from pathlib import Path
 import subprocess
 from dataclasses import make_dataclass, fields
 
-AndroidSDKPathClass = make_dataclass('AndroidSDKPathClass', [
-    ('SDKPath', Path), ('NDKPath', Path),
-    ('SDKAPIVersion', str), ('NDKVersion', str)
-])
-
-def get_android_sdk_paths(root):
-    """
-    Get the Android SDK and NDK paths from the root directory.
-    :param root: The root directory of the onnxruntime-secure repository.
-    :return: An instance of AndroidSDKPathClass with SDK and NDK paths.
-    """
-    system = platform.system()
-    if system == 'Darwin':
-        return AndroidSDKPathClass(
-            SDKPath='/opt/homebrew/share/android-commandlinetools',
-            NDKPath='/opt/homebrew/share/android-commandlinetools/ndk/27.2.12479018',
-            SDKAPIVersion='22', 
-            NDKVersion="27.2.12479018"
-        )
-    elif system == 'Linux':
-        return AndroidSDKPathClass(
-            SDKPath='/opt/android-sdk',
-            NDKPath='/opt/android-sdk/ndk/27.2.12479018',
-            SDKAPIVersion='22', 
-            NDKVersion="27.2.12479018"
-        )
-    elif system == 'Windows':
-        uf = os.environ.get("USERPROFILE")
-        android_sdk_path = os.path.join(uf, 'AndroidSDK')
-        return AndroidSDKPathClass(
-            SDKPath=android_sdk_path,
-            NDKPath=os.path.normpath(os.path.join(android_sdk_path, 'ndk/27.2.12479018')),
-            SDKAPIVersion='22', 
-            NDKVersion="27.2.12479018"
-        )
 
 def flatten(seq):
     out = []
@@ -66,8 +31,8 @@ if __name__ == "__main__":
     """
 
     parser = argparse.ArgumentParser(
-        prog="3_install_onnxruntime_android",
-        description="Build and install onnxruntime for Android"
+        prog="3_install_onnxruntime_linux",
+        description="Build and install onnxruntime for Linux"
     )
 
     parser.add_argument(
@@ -86,9 +51,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "--arch",
         nargs="+",                          # <-- require at least one
-        choices=["arm64-v8a", "armeabi-v7a"],
+        choices=['i686', 'x86_64', 'arm', 'aarch64', 'ppc64le', 'ppc64be', 'riscv64', 's390x'],
         help="one or more architectures to build for"
     )
+
+    arch_flags = {
+        "i686":   "g++-i686-linux-gnu",
+        "x86_64":  "g++-x86_64-linux-gnu",  
+        "arm":  "g++-arm-linux-gnueabihf",
+        "aarch64":    "g++-aarch64-linux-gnu",
+        "ppc64le":  "g++-powerpc64le-linux-gnu",
+        "ppc64be":  "g++-powerpc64-linux-gnu",
+        "riscv64":  "--rv64",
+        "s390x":    "g++-s390x-linux-gnu",
+    }
 
     parser.add_argument(
         "--no-neon",
@@ -124,11 +100,6 @@ if __name__ == "__main__":
     ]
     if args.build_shared_lib:
         base_options.append('--build_shared_lib')
-        build_path = build_path / 'shared'
-        install_path = install_path / 'shared'
-    else:
-        build_path = build_path / 'static'
-        install_path = install_path / 'static'
     if args.nnapi:
         base_options.append('--use_nnapi')
 
