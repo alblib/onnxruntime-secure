@@ -19,14 +19,14 @@ def get_android_sdk_paths(root):
         return AndroidSDKPathClass(
             SDKPath='/opt/homebrew/share/android-commandlinetools',
             NDKPath='/opt/homebrew/share/android-commandlinetools/ndk/27.2.12479018',
-            SDKAPIVersion='22', 
+            SDKAPIVersion='23', 
             NDKVersion="27.2.12479018"
         )
     elif system == 'Linux':
         return AndroidSDKPathClass(
             SDKPath='/opt/android-sdk',
             NDKPath='/opt/android-sdk/ndk/27.2.12479018',
-            SDKAPIVersion='22', 
+            SDKAPIVersion='23', 
             NDKVersion="27.2.12479018"
         )
     elif system == 'Windows':
@@ -35,7 +35,7 @@ def get_android_sdk_paths(root):
         return AndroidSDKPathClass(
             SDKPath=android_sdk_path,
             NDKPath=os.path.normpath(os.path.join(android_sdk_path, 'ndk/27.2.12479018')),
-            SDKAPIVersion='22', 
+            SDKAPIVersion='23', 
             NDKVersion="27.2.12479018"
         )
 

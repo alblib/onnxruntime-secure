@@ -370,8 +370,8 @@ def ensure_android_sdkmanager():
             sdkmanager, 
             "--install", 
             "platform-tools", 
-            "platforms;android-22", 
-            "build-tools;22.0.1", 
+            "platforms;android-23", 
+            "build-tools;35.0.0", 
             "ndk;27.2.12479018",
             f"--sdk_root={AndroidFolder}",
             ], check=True)
@@ -381,8 +381,8 @@ def ensure_android_sdkmanager():
             'sdkmanager', 
             "--install", 
             "platform-tools", 
-            "platforms;android-22", 
-            "build-tools;22.0.1", 
+            "platforms;android-23", 
+            "build-tools;35.0.0", 
             "ndk;27.2.12479018",
             ], check=True)
         
