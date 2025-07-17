@@ -222,7 +222,6 @@ def ensure_package(package):
             result = subprocess.run([package.command, "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return result.returncode == 0
         except FileNotFoundError:
-            print(f"{package.name} is not installed. Please install it.")
             return False
 
     fail_message = f'Failed to install {package.name}.'
@@ -303,6 +302,18 @@ def ensure_cmake():
         )
     )
 
+def ensure_npm():
+    return ensure_package(
+        Package(
+            name='Node.js',
+            command='npm',
+            winget_package_name='OpenJS.NodeJS',
+            apt_package_name='npm',
+            brew_package_name='node',
+            is_brew_cask=False,
+            url='https://nodejs.org/'
+        )
+    )
 
 def ensure_java():
     return ensure_package(
@@ -316,7 +327,6 @@ def ensure_java():
             url='https://www.java.com/'
         )
     )
-
 
 def ensure_android_sdkmanager():
     if not ensure_java():
@@ -335,7 +345,8 @@ def ensure_android_sdkmanager():
     ):
         uf = os.environ.get("USERPROFILE")
         AndroidFolder = os.path.join(uf, 'AndroidSDK')
-        if not os.path.exists(os.path.join(AndroidFolder, 'cmdline-tools/sdkmanager.bat')):
+        sdkmanager = os.path.join(AndroidFolder, 'cmdline-tools/bin/sdkmanager.bat')
+        if not os.path.exists(sdkmanager):
             print('Installing Android SDK Manager...')
             if not os.path.exists(AndroidFolder):
                 os.makedirs(AndroidFolder)
@@ -355,7 +366,6 @@ def ensure_android_sdkmanager():
             print('Android SDK Manager installed successfully.')
         else:
             print('Android SDK Manager is already installed.')
-        sdkmanager = os.path.join(AndroidFolder, 'cmdline-tools/bin/sdkmanager.bat')
         result = subprocess.run([
             sdkmanager, 
             "--install", 
@@ -395,6 +405,12 @@ def main():
         help="Install Android SDK"
     )
 
+    parser.add_argument(
+        "--install-web-sdk",
+        action="store_true",
+        help="Install Web SDK"
+    )
+
     args = parser.parse_args()
 
     result = True
@@ -414,6 +430,9 @@ def main():
 
     if args.install_android_sdk:
         result &= ensure_android_sdkmanager()
+
+    if args.install_web_sdk:
+        result &= ensure_npm() # necessary for webassembly build
 
     if result:
         print("All build tools are installed and ready to use.")

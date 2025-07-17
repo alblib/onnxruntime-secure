@@ -58,8 +58,8 @@ if __name__ == "__main__":
     install_path = root / "_deps" / "onnxruntime-install" / "WebAssembly"
 
     base_options = [
-        '--config', 'Release', 
-        '--skip_tests',
+        # '--config', 'Release', 
+        # '--skip_tests', '--disable_wasm_exception_catching', '--disable_rtti'
         '--enable_wasm_threads',
         '--enable_wasm_simd',
     ]
