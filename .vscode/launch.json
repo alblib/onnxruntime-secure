@@ -27,14 +27,15 @@
       ]
     },
     {
-      "name": "Install ONNX Runtime DML",
+      "name": "Install ONNX Runtime Windows",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/scripts/3_install_onnxruntime_dml.py",
+      "program": "${workspaceFolder}/scripts/3_install_onnxruntime_windows.py",
       "console": "integratedTerminal",
       "args": [
         // for a positional "root" arg:
-        "${workspaceFolder}"
+        "${workspaceFolder}",
+        "--arch", "x64"
       ]
     },
     {

@@ -37,6 +37,9 @@ if __name__ == "__main__":
     if system != 'Windows' or int(ver) < 10:
         print("Unsupported operating system for DirectML: Windows 10 or later is required.")
         sys.exit(1)
+    if platform.machine() != 'AMD64':
+        print('Windows Build Machine should be x64.')
+        sys.exit(1)
 
     if not os.path.isdir(src_path):
         print(f"ONNX Runtime source path does not exist: {src_path}")
@@ -67,14 +70,6 @@ if __name__ == "__main__":
         'CMAKE_C_FLAGS=/Qspectre',
         'CMAKE_CXX_FLAGS=/Qspectre',
     ]
-    build_dir = {
-        "x64": build_path / "x64",
-        "arm64": build_path / "ARM64",
-    }
-    install_dir = {
-        "x64": install_path / "x64",
-        "arm64": install_path / "ARM64",
-    }
 
     for arch in arch_options.keys():
         build_dest = str(build_path / arch)
@@ -96,4 +91,4 @@ if __name__ == "__main__":
             print(f"Failed to build ONNX Runtime for {arch}.")
             sys.exit(result.returncode)
         else:
-            print(f"ONNX Runtime for {arch} built and installed to {str(install_dir[arch])}")
+            print(f"ONNX Runtime for {arch} built and installed to {str(install_dest)}")
