@@ -219,7 +219,7 @@ Package = make_dataclass('Package', [
 def ensure_package(package):
     def check_package():
         try:
-            result = subprocess.run([package.command, "--version"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            result = subprocess.run([package.command, "--version"], shell=(package.command == 'npm'), check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return result.returncode == 0
         except FileNotFoundError:
             return False

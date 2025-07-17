@@ -9,7 +9,8 @@
       "console": "integratedTerminal",
       "args": [
         // for a positional "root" arg:
-        "--install-android-sdk"
+        "--install-android-sdk",
+        "--install-web-sdk"
       ]
     },
     {
