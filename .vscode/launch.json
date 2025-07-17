@@ -48,6 +48,19 @@
         "--nnapi",
         "--arch", "armeabi-v7a"
       ]
+    },
+    {
+      "name": "Install ONNX Runtime WebAssembly",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/3_install_onnxruntime_web.py",
+      "console": "integratedTerminal",
+      "args": [
+        // for a positional "root" arg:
+        "${workspaceFolder}",
+        "--webnn",
+        "--build_static_lib"
+      ]
     }
   ]
 }
