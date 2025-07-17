@@ -1,4 +1,4 @@
-import os, sys, platform, subprocess, tempfile
+import os, sys, platform, subprocess, tempfile, argparse, fnmatch
 from pathlib import Path
 from urllib.request import urlretrieve
 from dataclasses import make_dataclass, fields
@@ -166,33 +166,80 @@ def ensure_xcode():
     return True
 
 
+def ensure_apt_packages(name, packages):
+    """
+    Check if build-essential is installed on Linux, and if not, install it.
+    """
+
+    def is_package_installed(package):
+        """
+        Check if build-essential package is installed.
+        """
+        try:
+            subprocess.run(["dpkg", "-l", package], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return True
+        except subprocess.CalledProcessError:
+            return False
+        
+    to_install = []
+    for package in packages:
+        if not is_package_installed(package):
+            to_install.append(package)
+
+    if to_install:
+        print(f"{name} is not fully installed. Installing ...")
+        result = subprocess.run(["sudo", "apt-get", "install", "-y"] + to_install, check=True)
+        if result.returncode != 0:
+            print(f"Failed to install {to_install}. Please install it manually.")
+            sys.exit(1)
+        print(f"{name} installed successfully.")
+        # Return False to indicate that installation was performed and terminal needs to be restarted
+        return False
+    else:
+        print(f"{name} is already installed.")
+        return True
+
 def ensure_build_essential():
     """
     Check if build-essential is installed on Linux, and if not, install it.
     """
 
-    def is_build_essential_installed():
-        """
-        Check if build-essential package is installed.
-        """
-        try:
-            subprocess.run(["dpkg", "-l", "build-essential"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return True
-        except subprocess.CalledProcessError:
-            return False
+    def get_arch():
+        raw = platform.machine().lower()
+        if fnmatch.fnmatch(raw, 'i*86') or raw == 'x86':
+            return 'x86_32'
+        if raw in ['x86_64', 'x86-64', 'amd64']:
+            return 'x86_64'
+        if raw in ["aarch64", "arm64", 'arm64-v8a', 'armv8a', 'armv8-a', 'armv8', 'armv9', 'armv9-a', 'armv9a', 'arm64-v9']:
+            return 'ARM64'
+        elif (fnmatch.fnmatch(raw, 'arm*') or raw == 'arm') and not (fnmatch.fnmatch(raw, 'armv6*') or fnmatch.fnmatch(raw, 'armv7-m')):
+            return 'ARM32v7'
+        if raw == 'ppc64le':
+            return 'PPC64LE'
+        if raw == 'ppc64':
+            return 'PPC64BE'
+        if raw == 'riscv64':
+            return 'RISCV64'
+        if raw == 's390x':
+            return 'S390X'
 
-    if not is_build_essential_installed():
-        print("build-essential is not installed. Installing build-essential...")
-        result = subprocess.run(["sudo", "apt-get", "install", "-y", "build-essential"], check=True)
-        if result.returncode != 0:
-            print("Failed to install build-essential. Please install it manually.")
-            sys.exit(1)
-        print("build-essential installed successfully.")
-        # Return False to indicate that installation was performed and terminal needs to be restarted
-        return False
-    else:
-        print("build-essential is already installed.")
-        return True
+    # Cross-compiler Debian/Ubuntu package names
+    CROSS_COMPILERS = {
+        "x86_32":   "g++-i686-linux-gnu",
+        "x86_64":   "g++-x86_64-linux-gnu",  
+        "ARM32v7":  "g++-arm-linux-gnueabihf",
+        "ARM64":    "g++-aarch64-linux-gnu",
+        "PPC64LE":  "g++-powerpc64le-linux-gnu",
+        "PPC64BE":  "g++-powerpc64-linux-gnu",
+        "RISCV64":  "g++-riscv64-linux-gnu",
+        "S390X":    "g++-s390x-linux-gnu",
+    }
+    compilers = CROSS_COMPILERS.values()
+    compilers.remove(CROSS_COMPILERS[get_arch()])
+
+    compilers = ['build-essential'] + compilers
+    
+    return ensure_apt_packages('build-essential', compilers)
 
 
 Package = make_dataclass('Package', [
@@ -370,6 +417,19 @@ def main():
     Main function to ensure all build tools are installed.
     """
 
+    parser = argparse.ArgumentParser(
+        prog="1_install_build_tools",
+        description="Install build tools"
+    )
+
+    parser.add_argument(
+        "--install_android_sdk",
+        action="store_true",
+        help="Install Android SDK"
+    )
+
+    args = parser.parse_args()
+
     result = True
     result &= ensure_cmake()
     result &= ensure_ninja()
@@ -385,7 +445,8 @@ def main():
         print(f"Unsupported operating system: {system}")
         sys.exit(1)
 
-    result &= ensure_android_sdkmanager()
+    if args.install_android_sdk:
+        result &= ensure_android_sdkmanager()
 
     if result:
         print("All build tools are installed and ready to use.")
