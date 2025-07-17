@@ -34,101 +34,57 @@ if __name__ == "__main__":
         prog="3_install_onnxruntime_linux",
         description="Build and install onnxruntime for Linux"
     )
-
     parser.add_argument(
         "root",
         type=Path,
         metavar="root",
         help="root directory of onnxruntime-secure repository"
     )
-
     parser.add_argument(
-        "--nnapi",
-        action="store_true",
-        help="Enable NNAPI support"
-    )
-
-    parser.add_argument(
-        "--arch",
-        nargs="+",                          # <-- require at least one
-        choices=['i686', 'x86_64', 'arm', 'aarch64', 'ppc64le', 'ppc64be', 'riscv64', 's390x'],
-        help="one or more architectures to build for"
-    )
-
-    arch_flags = {
-        "i686":   "g++-i686-linux-gnu",
-        "x86_64":  "g++-x86_64-linux-gnu",  
-        "arm":  "g++-arm-linux-gnueabihf",
-        "aarch64":    "g++-aarch64-linux-gnu",
-        "ppc64le":  "g++-powerpc64le-linux-gnu",
-        "ppc64be":  "g++-powerpc64-linux-gnu",
-        "riscv64":  "--rv64",
-        "s390x":    "g++-s390x-linux-gnu",
-    }
-
-    parser.add_argument(
-        "--no-neon",
-        action="store_true",
-        help="Disable NEON support for armeabi-v7a architecture"
-    )
-
-    parser.add_argument(
-        "--build-shared-lib",
-        action="store_true",
-        help="Enable building shared library"
+        "--build_shared_lib",
+        help="enable shared library build",
+        action="store_true"
     )
 
     args = parser.parse_args()
     root = args.root.resolve().absolute()
     src_path = root / "_deps" / "onnxruntime-src"
-    build_path = root / "_deps" / "onnxruntime-build" / "Android"
-    install_path = root / "_deps" / "onnxruntime-install" / "Android"
-
-    android_sdk_info = get_android_sdk_paths(root)
+    build_path = root / "_deps" / "onnxruntime-build" / "Linux"
+    install_path = root / "_deps" / "onnxruntime-install" / "Linux"
 
     base_options = [
-        '--android', 
         '--config', 'Release', 
         '--cmake_generator', 'Ninja',
         '--parallel',
         '--compile_no_warning_as_error',
         '--skip_submodule_sync',
         '--skip_tests',
-        '--android_api', android_sdk_info.SDKAPIVersion,
-        '--android_sdk_path', android_sdk_info.SDKPath,
-        '--android_ndk_path', android_sdk_info.NDKPath,
     ]
+
     if args.build_shared_lib:
         base_options.append('--build_shared_lib')
-    if args.nnapi:
-        base_options.append('--use_nnapi')
+        build_path = build_path / 'shared'
+        install_path = install_path / 'shared'
+    else:
+        build_path = build_path / 'static'
+        install_path = install_path / 'static'
 
-    for arch in args.arch:
-        print(f"Building ONNX Runtime for Android {arch}...")
-        options = base_options + [
-            '--android_abi', arch,
-            '--build_dir', build_path / arch,
-            '--target', 'install',
-        ]
-        cmake_options = {
-            "CMAKE_INSTALL_PREFIX": install_path / arch,
-            "CMAKE_C_FLAGS_RELEASE": "-O2 -g0 -Wno-unused-parameter -Wno-unused-variable",# -mspeculative-load-hardening -mindirect-branch=thunk -mindirect-branch-register -mfunction-return=thunk",
-            "CMAKE_CXX_FLAGS_RELEASE": "-O2 -g0 -Wno-unused-parameter -Wno-unused-variable",# -mspeculative-load-hardening -mindirect-branch=thunk -mindirect-branch-register -mfunction-return=thunk",
-            "CMAKE_SHARED_LINKER_FLAGS_RELEASE": "-s",
-        }
-        if args.no_neon:
-            if arch == "armeabi-v7a":
-                cmake_options['ANDROID_ARM_NEON'] = 'FALSE'
-            else:
-                print(f"Warning: --no-neon is only applicable to armeabi-v7a, ignoring for {arch}.")
-        
-        result = build(
-            root, 
-            options,
-            cmake_options
-            )
-        if result.returncode != 0:
-            print(f"Failed to build ONNX Runtime for {arch}.")
-            sys.exit(result.returncode)
-        else:
-            print(f"ONNX Runtime for {arch} built and installed to {str(install_path / arch)}")
+    print(f"Building ONNX Runtime for Linux...")
+    options = base_options + [
+        '--build_dir', build_path,
+        '--target', 'install',
+    ]
+    cmake_options = {
+        "CMAKE_INSTALL_PREFIX": install_path,
+    }
+       
+    result = build(
+        root, 
+        options,
+        cmake_options
+        )
+    if result.returncode != 0:
+        print(f"Failed to build ONNX Runtime for Linux.")
+        sys.exit(result.returncode)
+    else:
+        print(f"ONNX Runtime built and installed to {str(install_path)}")

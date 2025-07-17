@@ -203,43 +203,7 @@ def ensure_build_essential():
     """
     Check if build-essential is installed on Linux, and if not, install it.
     """
-
-    def get_arch():
-        raw = platform.machine().lower()
-        if fnmatch.fnmatch(raw, 'i*86') or raw == 'x86':
-            return 'x86_32'
-        if raw in ['x86_64', 'x86-64', 'amd64']:
-            return 'x86_64'
-        if raw in ["aarch64", "arm64", 'arm64-v8a', 'armv8a', 'armv8-a', 'armv8', 'armv9', 'armv9-a', 'armv9a', 'arm64-v9']:
-            return 'ARM64'
-        elif (fnmatch.fnmatch(raw, 'arm*') or raw == 'arm') and not (fnmatch.fnmatch(raw, 'armv6*') or fnmatch.fnmatch(raw, 'armv7-m')):
-            return 'ARM32v7'
-        if raw == 'ppc64le':
-            return 'PPC64LE'
-        if raw == 'ppc64':
-            return 'PPC64BE'
-        if raw == 'riscv64':
-            return 'RISCV64'
-        if raw == 's390x':
-            return 'S390X'
-
-    # Cross-compiler Debian/Ubuntu package names
-    CROSS_COMPILERS = {
-        "x86_32":   "g++-i686-linux-gnu",
-        "x86_64":   "g++-x86_64-linux-gnu",  
-        "ARM32v7":  "g++-arm-linux-gnueabihf",
-        "ARM64":    "g++-aarch64-linux-gnu",
-        "PPC64LE":  "g++-powerpc64le-linux-gnu",
-        "PPC64BE":  "g++-powerpc64-linux-gnu",
-        "RISCV64":  "g++-riscv64-linux-gnu",
-        "S390X":    "g++-s390x-linux-gnu",
-    }
-    compilers = CROSS_COMPILERS.values()
-    compilers.remove(CROSS_COMPILERS[get_arch()])
-
-    compilers = ['build-essential'] + compilers
-    
-    return ensure_apt_packages('build-essential', compilers)
+    return ensure_apt_packages('build-essential', ['build-essential'])
 
 
 Package = make_dataclass('Package', [
