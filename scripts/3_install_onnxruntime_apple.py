@@ -75,11 +75,11 @@ if __name__ == "__main__":
             '--ios', 
             '--apple_sysroot', 'iphoneos', 
             '--osx_arch', 'arm64', 
-            '--apple_deploy_target', '12.0'
+            '--apple_deploy_target', '15.0'
             ]
     else:
         base_options += [
-            '--apple_deploy_target', '10.13'
+            '--apple_deploy_target', '11.0'
             ]
         cmake_extra_defines += [
             'CMAKE_OSX_ARCHITECTURES="arm64;x86_64"'
