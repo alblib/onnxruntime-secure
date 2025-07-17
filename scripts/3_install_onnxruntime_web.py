@@ -40,16 +40,6 @@ if __name__ == "__main__":
         metavar="root",
         help="root directory of onnxruntime-secure repository"
     )
-    parser.add_argument(
-        "--build_static_lib",
-        help="enable static library build",
-        action="store_true"
-    )
-    parser.add_argument(
-        "--webnn",
-        help="enable webnn support",
-        action="store_true"
-    )
 
     args = parser.parse_args()
     root = args.root.resolve().absolute()
@@ -58,24 +48,10 @@ if __name__ == "__main__":
     install_path = root / "_deps" / "onnxruntime-install" / "WebAssembly"
 
     base_options = [
-        # '--config', 'Release', 
-        # '--skip_tests', '--disable_wasm_exception_catching', '--disable_rtti'
+        '--config', 'MinSizeRel', 
         '--enable_wasm_threads',
         '--enable_wasm_simd',
     ]
-    if args.build_static_lib:
-        base_options.append('--build_wasm_static_lib')
-        build_path = build_path / 'static'
-        install_path = install_path / 'static'
-    else:
-        base_options.append('--build_wasm')
-        build_path = build_path / 'shared'
-        install_path = install_path / 'shared'
-    if args.webnn:
-        base_options += [
-            '--use_jsep',
-            '--use_webnn'
-        ]
 
     print(f"Building ONNX Runtime for Web...")
     options = base_options + [
