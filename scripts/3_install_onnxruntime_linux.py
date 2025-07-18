@@ -15,7 +15,7 @@ def flatten(seq):
 
 def build(root, options, cmake_options):
     src_path = (root / "_deps" / "onnxruntime-src").resolve().absolute()
-    build_script = src_path / "build.bat" if platform.system() == 'Windows' else src_path / "build.sh"
+    build_script = src_path / "build.sh"
     build_script = build_script.resolve().absolute()
     options = [str(os.path.abspath(x)) if isinstance(x, os.PathLike) else x
                for x in flatten(options)]

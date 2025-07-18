@@ -22,7 +22,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--arch",
         nargs="+",                          # <-- require at least one
-        choices=["x86", "x64", "arm64", "arm64ec", "arm32"],
+        choices=["x64", "arm64", "arm64ec"],
         help="one or more architectures to build for"
     )
 
@@ -54,15 +54,10 @@ if __name__ == "__main__":
         '--config', 'Release',
         '--cmake_generator', 'Visual Studio 17 2022',
         "--parallel",
-        "--compile_no_warning_as_error",
-        "--skip_submodule_sync",
-        "--skip_tests",
         "--build_shared_lib",
     ]
     arch_options = {
         "x64": ['--use_dml'],
-        "x86": ['--x86', '--use_dml'],
-        "arm32": ['--arm'],
         "arm64": ['--arm64', '--use_dml'],
         "arm64ec": ['--arm64ec', '--use_dml'],
     }
@@ -71,24 +66,22 @@ if __name__ == "__main__":
         'CMAKE_CXX_FLAGS=/Qspectre',
     ]
 
-    for arch in arch_options.keys():
-        build_dest = str(build_path / arch)
-        install_dest = str(install_path / arch)
-        try:
-            install_dest = os.path.relpath(
-                install_dest, build_dest)
-        except ValueError:
-            pass
+    for arch in args.arch:
+        build_dest = str((build_path / arch).resolve().absolute())
+        install_dest = str((install_path / arch).resolve().absolute())
         options = base_options + arch_options[arch] + [
             '--build_dir', build_dest,
             '--target', 'install',
+            "--compile_no_warning_as_error",
+            "--skip_submodule_sync",
+            "--skip_tests",
             '--cmake_extra_defines', *base_cmake_extra_defines, 
             f'CMAKE_INSTALL_PREFIX={install_dest}',
         ]
-        print(f"Building ONNX Runtime for {arch}...")
+        print(f"Building ONNX Runtime for Windows {arch}...")
         result = subprocess.run([str(build_bat)] + options, check=True)
         if result.returncode != 0:
-            print(f"Failed to build ONNX Runtime for {arch}.")
+            print(f"Failed to build ONNX Runtime for Windows {arch}.")
             sys.exit(result.returncode)
         else:
-            print(f"ONNX Runtime for {arch} built and installed to {str(install_dest)}")
+            print(f"ONNX Runtime for Windows {arch} built and installed to {str(install_dest)}")

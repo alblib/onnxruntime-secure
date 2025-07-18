@@ -91,19 +91,11 @@ if __name__ == "__main__":
         ]
     if args.use_coreml:
         base_options.append('--use_coreml')
-    base_options += ['--build_dir', str(build_path)]
+    base_options += ['--build_dir', str(build_path.resolve().absolute())]
     cmake_extra_defines += [
-        'CMAKE_INSTALL_PREFIX=' + str(install_path)
+        'CMAKE_INSTALL_PREFIX=' + str(install_path.resolve().absolute())
     ]
     options = base_options + ['--cmake_extra_defines', *cmake_extra_defines]
-
-    build_dest = str(build_path.resolve().absolute())
-    install_dest = str(install_path.resolve().absolute())
-    try:
-        install_dest = os.path.relpath(
-            install_dest, build_dest)
-    except ValueError:
-        pass
 
     print(f"Building ONNX Runtime for {'iOS' if args.ios else 'macOS'}...")
     result = subprocess.run([str(build_bat)] + options, check=True)

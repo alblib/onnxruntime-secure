@@ -1,43 +1,39 @@
-import sys, platform, os, argparse, re
+import sys, platform, os, argparse
 from pathlib import Path
 import subprocess
-from dataclasses import make_dataclass, fields
 
-AndroidSDKPathClass = make_dataclass('AndroidSDKPathClass', [
-    ('SDKPath', Path), ('NDKPath', Path),
-    ('SDKAPIVersion', str), ('NDKVersion', str)
-])
+class AndroidEnvironment:
+    def __init__(self, SDKAPIVersion = 23, NDKVersion = '27.2.12479018'):
+        system = platform.system()
+        arch = platform.machine()
+        if system == 'Darwin':
+            self.SDKPath = '/opt/homebrew/share/android-commandlinetools'
+        elif system == 'Linux' and arch == 'x86_64':
+            self.SDKPath = '/opt/android-sdk'
+        elif system == 'Windows' and arch == 'AMD64':
+            self.SDKPath = os.path.join(os.environ.get("USERPROFILE"), 'AndroidSDK')
+        else:
+            print(f"Unsupported operating system: {system}:{arch}")
+            sys.exit(1)
+        try:
+            self.SDKAPIVersion = int(str(SDKAPIVersion))
+        except:
+            if isinstance(SDKAPIVersion, str) and SDKAPIVersion.startswith('android-'):
+                try:
+                    self.SDKAPIVersion = int(SDKAPIVersion[8:])
+                except:
+                    raise Exception('incorrect SDKAPIVersion')
+            else:
+                raise Exception('incorrect SDKAPIVersion')
+        self.NDKVersion = NDKVersion
+        self.NDKPath = os.path.join(self.SDKPath, 'ndk', self.NDKVersion)
 
-def get_android_sdk_paths(root):
-    """
-    Get the Android SDK and NDK paths from the root directory.
-    :param root: The root directory of the onnxruntime-secure repository.
-    :return: An instance of AndroidSDKPathClass with SDK and NDK paths.
-    """
-    system = platform.system()
-    if system == 'Darwin':
-        return AndroidSDKPathClass(
-            SDKPath='/opt/homebrew/share/android-commandlinetools',
-            NDKPath='/opt/homebrew/share/android-commandlinetools/ndk/27.2.12479018',
-            SDKAPIVersion='23', 
-            NDKVersion="27.2.12479018"
-        )
-    elif system == 'Linux':
-        return AndroidSDKPathClass(
-            SDKPath='/opt/android-sdk',
-            NDKPath='/opt/android-sdk/ndk/27.2.12479018',
-            SDKAPIVersion='23', 
-            NDKVersion="27.2.12479018"
-        )
-    elif system == 'Windows':
-        uf = os.environ.get("USERPROFILE")
-        android_sdk_path = os.path.join(uf, 'AndroidSDK')
-        return AndroidSDKPathClass(
-            SDKPath=android_sdk_path,
-            NDKPath=os.path.normpath(os.path.join(android_sdk_path, 'ndk/27.2.12479018')),
-            SDKAPIVersion='23', 
-            NDKVersion="27.2.12479018"
-        )
+    def options(self):
+        return [
+            '--android_api', str(self.SDKAPIVersion),
+            '--android_sdk_path', str(self.SDKPath),
+            '--android_ndk_path', str(self.NDKPath),
+        ]
 
 def flatten(seq):
     out = []
@@ -108,8 +104,6 @@ if __name__ == "__main__":
     build_path = root / "_deps" / "onnxruntime-build" / "Android"
     install_path = root / "_deps" / "onnxruntime-install" / "Android"
 
-    android_sdk_info = get_android_sdk_paths(root)
-
     base_options = [
         '--android', 
         '--config', 'Release', 
@@ -118,10 +112,8 @@ if __name__ == "__main__":
         '--compile_no_warning_as_error',
         '--skip_submodule_sync',
         '--skip_tests',
-        '--android_api', android_sdk_info.SDKAPIVersion,
-        '--android_sdk_path', android_sdk_info.SDKPath,
-        '--android_ndk_path', android_sdk_info.NDKPath,
-    ]
+    ] + AndroidEnvironment().options()
+
     if args.build_shared_lib:
         base_options.append('--build_shared_lib')
         build_path = build_path / 'shared'

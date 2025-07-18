@@ -22,7 +22,6 @@
       "args": [
         // for a positional "root" arg:
         "${workspaceFolder}",
-        "opencl",
         "onnxruntime"
       ]
     },
@@ -48,7 +47,43 @@
         // for a positional "root" arg:
         "${workspaceFolder}",
         "--nnapi",
-        "--arch", "armeabi-v7a"
+        "--arch", "armeabi-v7a", "arm64-v8a"
+      ]
+    },
+    {
+      "name": "Install ONNX Runtime Linux",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/3_install_onnxruntime_linux.py",
+      "console": "integratedTerminal",
+      "args": [
+        // for a positional "root" arg:
+        "${workspaceFolder}",
+      ]
+    },
+    {
+      "name": "Install ONNX Runtime iOS",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/3_install_onnxruntime_apple.py",
+      "console": "integratedTerminal",
+      "args": [
+        // for a positional "root" arg:
+        "${workspaceFolder}",
+        "--ios",
+        "--use_coreml",
+      ]
+    },
+    {
+      "name": "Install ONNX Runtime macOS",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/3_install_onnxruntime_apple.py",
+      "console": "integratedTerminal",
+      "args": [
+        // for a positional "root" arg:
+        "${workspaceFolder}",
+        "--use_coreml",
       ]
     },
     {
