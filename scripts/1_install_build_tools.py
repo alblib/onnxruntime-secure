@@ -1,4 +1,4 @@
-import os, sys, platform, subprocess, tempfile, argparse, fnmatch
+import os, sys, platform, subprocess, tempfile, argparse, json
 from pathlib import Path
 from urllib.request import urlretrieve
 from dataclasses import make_dataclass, fields
@@ -329,6 +329,17 @@ def ensure_java():
     )
 
 def ensure_android_sdkmanager():
+
+    # Install version options
+    with open(os.path.join(os.path.dirname(__file__), 'sdk_version.json'), 'r') as sources_src:
+        android_versions = json.load(sources_src)['android']
+    sdk_install_options = [
+        "platform-tools",
+        f"platforms;{android_versions['platform']}", 
+        f"build-tools;{android_versions['build-tool']}", 
+        f"ndk;{android_versions['ndk']}",
+    ]
+
     if not ensure_java():
         return False
 
@@ -366,25 +377,13 @@ def ensure_android_sdkmanager():
             print('Android SDK Manager installed successfully.')
         else:
             print('Android SDK Manager is already installed.')
-        result = subprocess.run([
-            sdkmanager, 
-            "--install", 
-            "platform-tools", 
-            "platforms;android-23", 
-            "build-tools;35.0.0", 
-            "ndk;27.2.12479018",
-            f"--sdk_root={AndroidFolder}",
-            ], check=True)
+        sdk_install_options.append(f"--sdk_root={AndroidFolder}")
     else:
         sdkmanager = 'sdkmanager'
-        result = subprocess.run([
-            'sdkmanager', 
-            "--install", 
-            "platform-tools", 
-            "platforms;android-23", 
-            "build-tools;35.0.0", 
-            "ndk;27.2.12479018",
-            ], check=True)
+        
+    result = subprocess.run(
+        [sdkmanager, "--install"] + sdk_install_options,
+        check=True)
         
     return result.returncode == 0
 

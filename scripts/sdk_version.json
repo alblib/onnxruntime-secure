@@ -1,0 +1,29 @@
+{
+    "android": {
+        "platform": "android-23",
+        "build-tool": "35.0.0",
+        "ndk": "27.2.12479018"
+    },
+    "sources": [
+        {
+            "name": "onnxruntime",
+            "tag": "v1.22.1",
+            "url": "https://github.com/microsoft/onnxruntime.git"
+        },
+        {
+            "name": "opencl",
+            "tag": "v2024.10.24",
+            "url": "https://github.com/KhronosGroup/OpenCL-SDK.git"
+        },
+        {
+            "name": "opengl",
+            "tag": "3.4",
+            "url": "https://github.com/glfw/glfw.git"
+        },
+        {
+            "name": "opencv",
+            "tag": "4.12.0",
+            "url": "https://github.com/opencv/opencv.git"
+        }
+    ]
+}

@@ -1,9 +1,17 @@
-import sys, platform, os, argparse
+import sys, platform, os, argparse, json
 from pathlib import Path
 import subprocess
 
 class AndroidEnvironment:
-    def __init__(self, SDKAPIVersion = 23, NDKVersion = '27.2.12479018'):
+    def __init__(self, SDKAPIVersion = None, NDKVersion = None):
+        if SDKAPIVersion is None or NDKVersion is None:
+            with open(os.path.join(os.path.dirname(__file__), 'sdk_version.json'), 'r') as sources_src:
+                android_versions = json.load(sources_src)['android']
+                if NDKVersion is None:
+                    NDKVersion = android_versions['ndk']
+                if SDKAPIVersion is None:
+                    SDKAPIVersion = android_versions['platform']
+
         system = platform.system()
         arch = platform.machine()
         if system == 'Darwin':

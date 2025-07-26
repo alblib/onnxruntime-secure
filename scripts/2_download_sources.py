@@ -1,4 +1,4 @@
-import os, shutil, subprocess, argparse
+import os, shutil, subprocess, argparse, json
 from pathlib import Path
 
 def run(cmd, cwd=None):
@@ -104,6 +104,9 @@ def checkout_ref(clone_dir, ref):
 
 if __name__ == "__main__":
 
+    with open(os.path.join(os.path.dirname(__file__), 'sdk_version.json'), 'r') as sources_src:
+        sources = json.load(sources_src)['sources']
+
     parser = argparse.ArgumentParser(
         prog="2_download_sources",
         description="Ensure source repositories for APIs are cloned and updated."
@@ -120,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "features",
         nargs="+",                          # <-- require at least one
-        choices=["opencl", "onnxruntime"],
+        choices=[source['name'] for source in sources],
         help="one or more features to enable"
     )
 
@@ -128,17 +131,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     root = args.root.resolve()
 
-    if "opencl" in args.features:
-        ensure_feature_repo(
-            "https://github.com/KhronosGroup/OpenCL-SDK.git",
-            "v2024.10.24",
-            root, 
-            "opencl-src"
-            )
-    if "onnxruntime" in args.features:
-        ensure_feature_repo(
-            "https://github.com/microsoft/onnxruntime.git",
-            "v1.22.1",
-            root,
-            "onnxruntime-src"
-        )
+    for source in sources:
+        if source['name'] in args.features:
+            ensure_feature_repo(
+                source['url'],
+                source['tag'],
+                root,
+                f"{source['name']}-src"
+                )

@@ -22,7 +22,10 @@
       "args": [
         // for a positional "root" arg:
         "${workspaceFolder}",
-        "onnxruntime"
+        "onnxruntime",
+        "opencv",
+        "opencl",
+        "opengl"
       ]
     },
     {
