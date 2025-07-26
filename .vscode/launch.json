@@ -99,6 +99,17 @@
         // for a positional "root" arg:
         "${workspaceFolder}"
       ]
+    },
+    {
+      "name": "Install OpenCV Test",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/3_install_opencv.py",
+      "console": "integratedTerminal",
+      "args": [
+        // for a positional "root" arg:
+        "${workspaceFolder}"
+      ]
     }
   ]
 }

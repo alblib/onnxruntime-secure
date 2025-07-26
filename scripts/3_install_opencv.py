@@ -1,7 +1,8 @@
-import sys, platform, os, json
+import sys, platform, os, json, argparse
 import subprocess
-from typing import Union, Literal
+from typing import Union
 from enum import Enum
+from pathlib import Path
 
 class Target(Enum):
     Android = "Android"
@@ -74,7 +75,9 @@ def build(
     install_path = str(os.path.abspath(install_path))
     cmake_options.update(
         {
-            "CMAKE_INSTALL_PREFIX": install_path
+            "CMAKE_INSTALL_PREFIX": install_path,
+            "CMAKE_BUILD_TYPE": "Release",
+            "CMAKE_WARN_DEPRECATED": "OFF",
         }
     )
 
@@ -140,7 +143,6 @@ def build(
         "cmake", 
         "-S", source_path,
         "-B", build_path,
-        "--config", "Release",
     ]
     if cmake_generator:
         subprocess_args += ['-G', cmake_generator]
@@ -167,3 +169,28 @@ def build(
     if result.returncode != 0:
         print(f"Failed to build OpenCV.")
         sys.exit(result.returncode)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        prog="2_download_sources",
+        description="Ensure source repositories for APIs are cloned and updated."
+    )
+
+    # Positional argument "path"
+    parser.add_argument(
+        "root",
+        type=Path,
+        metavar="root",
+        help="root directory of onnxruntime-secure repository"
+    )
+
+    # Parse arguments; will auto-exit and print usage on error
+    args = parser.parse_args()
+    root = args.root.resolve()
+
+    src_path = os.path.join(root, '_deps', 'opencv-src')
+    build_path = os.path.join(root, '_deps', 'opencv-build')
+    install_path = os.path.join(root, '_deps', 'opencv-install')
+
+    build(src_path, build_path, install_path, Target.Android, Architecture.AARCH64)
