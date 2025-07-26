@@ -150,13 +150,19 @@ def build(
     elif target == Target.Windows:
         cmake_generator = 'Visual Studio 17 2022'
         if arch == Architecture.X64:
-            cmake_architecture = 'AMD64'
+            cmake_architecture = 'x64'
+            cmake_options.update(
+                {
+                    # Requires Windows 11 24H2 (SSE4.2)
+                    "CPU_BASELINE": "SSE4_2"
+                }
+            )
         elif arch == Architecture.AARCH64:
             cmake_architecture = 'ARM64'
         else:
             print("Unsupported architecture. Use AMD64 or ARM64 for MSVC.")
             sys.exit(1)
-        cmake_options.update( # Use Spectre-mitigated libs for security
+        cmake_options.update(
             {
                 # Use Spectre-mitigated libs for security
                 "CMAKE_C_FLAGS_RELEASE": "/Qspectre",
@@ -266,24 +272,25 @@ if __name__ == "__main__":
                 common_cmake_flags = json.load(sources_src)['opencv']['common_cmake_flags']
                 cmake_options.update(common_cmake_flags)
                 
-            if target_platform == Target.Android:
-                cmake_options.update(
-                    get_ort_args(
-                        os.path.join(root, '_deps', 'onnxruntime-install', target_platform.value, 'static', arch.value)
+            if 'WITH_ONNX' in cmake_options and cmake_options['WITH_ONNX'] in ['ON', 'TRUE', 'true', 'on']:
+                if target_platform == Target.Android:
+                    cmake_options.update(
+                        get_ort_args(
+                            os.path.join(root, '_deps', 'onnxruntime-install', target_platform.value, 'static', arch.value)
+                        )
                     )
-                )
-            elif target_platform == Target.Windows:
-                cmake_options.update(
-                    get_ort_args(
-                        os.path.join(root, '_deps', 'onnxruntime-install', target_platform.value, arch.value[:5])
+                elif target_platform == Target.Windows:
+                    cmake_options.update(
+                        get_ort_args(
+                            os.path.join(root, '_deps', 'onnxruntime-install', target_platform.value, arch.value[:5])
+                        )
                     )
-                )
-            else:
-                cmake_options.update(
-                    get_ort_args(
-                        os.path.join(root, '_deps', 'onnxruntime-install', target_platform.value, 'static')
+                else:
+                    cmake_options.update(
+                        get_ort_args(
+                            os.path.join(root, '_deps', 'onnxruntime-install', target_platform.value, 'static')
+                        )
                     )
-                )
 
             build_path = os.path.join(build_path, arch.value, 'shared' if args.build_shared_lib else 'static')
             install_path = os.path.join(install_path, arch.value, 'shared' if args.build_shared_lib else 'static')
