@@ -36,11 +36,11 @@ class AndroidEnvironment:
         self.NDKVersion = NDKVersion
         self.NDKPath = os.path.join(self.SDKPath, 'ndk', self.NDKVersion)
 
-    def options(self):
+    def onnxruntime_options(self):
         return [
             '--android_api', str(self.SDKAPIVersion),
-            '--android_sdk_path', str(self.SDKPath),
-            '--android_ndk_path', str(self.NDKPath),
+            '--android_sdk_path', self.SDKPath,
+            '--android_ndk_path', self.NDKPath,
         ]
 
 def flatten(seq):
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         '--compile_no_warning_as_error',
         '--skip_submodule_sync',
         '--skip_tests',
-    ] + AndroidEnvironment().options()
+    ] + AndroidEnvironment().onnxruntime_options()
 
     if args.build_shared_lib:
         base_options.append('--build_shared_lib')
