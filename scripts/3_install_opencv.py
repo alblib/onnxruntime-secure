@@ -7,9 +7,10 @@ from pathlib import Path
 class Target(Enum):
     Android = "Android"
     Windows = "Windows"
-    macOS = "Darwin"
+    macOS = "macOS"
     iOS = "iOS"
     Linux = "Linux"
+    WebAssembly = "WebAssembly"
 
 class Architecture(Enum):
     X64 = "x64"
@@ -68,6 +69,34 @@ class AndroidEnvironment:
             "CMAKE_TOOLCHAIN_FILE": os.path.join(self.NDKPath, 'build', 'cmake', 'android.toolchain.cmake'),
             "ANDROID_PLATFORM": self.SDKAPIVersion,
             "ANDROID_MIN_SDK_VERSION": self.SDKAPIVersion,
+        }
+    
+def get_ort_args(ort_root):
+    ort_root = os.path.abspath(ort_root)
+    ort_include = os.path.join(ort_root, 'include')
+    for root, dirs, files in os.walk(ort_include):
+        if 'onnxruntime_cxx_api.h' in files:
+            ort_include = root
+            break
+    ort_lib = str(Path(os.path.join(ort_root, 'lib')).resolve().absolute().as_posix())
+    ort_libs = []
+    for root, dirs, files in os.walk(ort_lib):
+        for file in files:
+            if file.endswith('.lib') or file.endswith('.a'):
+                ort_libs.append(
+                    str(
+                        Path(os.path.join(root, file)).resolve().absolute().as_posix()
+                    )
+                )
+    ort_libs = ';'.join(ort_libs)
+    return {
+        'WITH_ONNX': 'ON',
+        'ONNXRT_ROOT_DIR': ort_root,
+        # 'ONNX_INCLUDE_DIR': ort_include,
+        # 'ORT_INCLUDE': ort_include,
+        # 'ONNX_LIBRARY': ort_lib,
+        # 'ONNX_LIBRARIES': ort_libs,
+        'ORT_LIB': ort_libs,
         }
 
 def build(
@@ -139,6 +168,12 @@ def build(
 
     elif target == Target.macOS or target == Target.iOS:
         cmake_generator = 'Xcode'
+        if target == Target.macOS:
+            cmake_options.update(
+                {
+                    'CMAKE_OSX_ARCHITECTURES': "arm64;x86_64"
+                }
+            )
 
     # Disable Optionals
     cmake_options.update(
@@ -234,9 +269,33 @@ if __name__ == "__main__":
         for arch in available_archs[target_platform]:
             if arch not in target_archs:
                 continue
+
+            cmake_options = {"BUILD_SHARED_LIBS": "ON" if args.build_shared_lib else "OFF"}
                 
+            if target_platform == Target.Android:
+                cmake_options.update(
+                    get_ort_args(
+                        os.path.join(root, '_deps', 'onnxruntime-install', target_platform.value, 'static', arch.value)
+                    )
+                )
+            elif target_platform == Target.Windows:
+                cmake_options.update(
+                    get_ort_args(
+                        os.path.join(root, '_deps', 'onnxruntime-install', target_platform.value, arch.value[:5])
+                    )
+                )
+            else:
+                cmake_options.update(
+                    get_ort_args(
+                        os.path.join(root, '_deps', 'onnxruntime-install', target_platform.value, 'static')
+                    )
+                )
+
             build_path = os.path.join(build_path, arch.value, 'shared' if args.build_shared_lib else 'static')
             install_path = os.path.join(install_path, arch.value, 'shared' if args.build_shared_lib else 'static')
-            build(src_path, build_path, install_path, Target(target_platform), Architecture(arch),
-                  {"BUILD_SHARED_LIBS": "ON" if args.build_shared_lib else "OFF"}
+            build(src_path, build_path, install_path, target_platform, arch,
+                  cmake_options
                   )
+            
+            # https://forums.developer.nvidia.com/t/how-to-make-onnx-turned-on-in-opencv-cmake-for-cuda-and-cudnn-gpu-acceleration/318340
+# https://qiita.com/pipimaru1/items/37f6444c8cbb0d476cc4
