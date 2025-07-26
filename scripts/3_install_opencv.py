@@ -175,16 +175,6 @@ def build(
                 }
             )
 
-    # Disable Optionals
-    cmake_options.update(
-        {
-            "BUILD_FAT_JAVA_LIB": "OFF",
-            "BUILD_JAVA": "OFF",
-            "BUILD_PERF_TESTS": "OFF",
-            "BUILD_TESTS": "OFF",
-        }
-    )
-
     subprocess_args = [
         "cmake", 
         "-S", source_path,
@@ -271,6 +261,10 @@ if __name__ == "__main__":
                 continue
 
             cmake_options = {"BUILD_SHARED_LIBS": "ON" if args.build_shared_lib else "OFF"}
+
+            with open(os.path.join(os.path.dirname(__file__), 'sdk_version.json'), 'r') as sources_src:
+                common_cmake_flags = json.load(sources_src)['opencv']['common_cmake_flags']
+                cmake_options.update(common_cmake_flags)
                 
             if target_platform == Target.Android:
                 cmake_options.update(
