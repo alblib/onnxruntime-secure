@@ -12,7 +12,7 @@ class Target(Enum):
     Linux = "Linux"
 
 class Architecture(Enum):
-    X64 = "AMD64"
+    X64 = "x64"
     AARCH64 = "arm64-v8a"
     ARM32NEON = "armeabi-v7a"
 
@@ -121,8 +121,11 @@ def build(
             sys.exit(1)
         cmake_options.update( # Use Spectre-mitigated libs for security
             {
+                # Use Spectre-mitigated libs for security
                 "CMAKE_C_FLAGS_RELEASE": "/Qspectre",
                 "CMAKE_CXX_FLAGS_RELEASE": "/Qspectre",
+                # Enable OpenCL
+                "WITH_OPENCL": "ON",
             }
         )
 
@@ -185,12 +188,41 @@ if __name__ == "__main__":
         help="root directory of onnxruntime-secure repository"
     )
 
+    parser.add_argument(
+        "--build_shared_lib",
+        help="enable shared library build",
+        action="store_true"
+    )
+
+    parser.add_argument(
+        "--arch",
+        nargs="+",                          # <-- require at least one
+        choices=[a.value for a in Architecture],
+        help="one or more architectures to build for"
+    )
+
+    parser.add_argument(
+        "--platform",
+        nargs="+",                          # <-- require at least one
+        choices=[t.value for t in Target],
+        help="one or more architectures to build for"
+    )
+
     # Parse arguments; will auto-exit and print usage on error
     args = parser.parse_args()
     root = args.root.resolve()
 
-    src_path = os.path.join(root, '_deps', 'opencv-src')
-    build_path = os.path.join(root, '_deps', 'opencv-build')
-    install_path = os.path.join(root, '_deps', 'opencv-install')
+    deps_path = os.path.abspath(os.path.join(root, '_deps'))
+    src_path = os.path.join(deps_path, 'opencv-src')
+    build_root = os.path.join(deps_path, 'opencv-build')
+    install_root = os.path.join(deps_path, 'opencv-install')
 
-    build(src_path, build_path, install_path, Target.Android, Architecture.AARCH64)
+    for target_platform in args.platform:
+        build_path = os.path.join(build_root, target_platform)
+        install_path = os.path.join(install_root, target_platform)
+        for arch in args.arch:
+            build_path = os.path.join(build_path, arch, 'shared' if args.build_shared_lib else 'static')
+            install_path = os.path.join(install_path, arch, 'shared' if args.build_shared_lib else 'static')
+            build(src_path, build_path, install_path, Target(target_platform), Architecture(arch),
+                  {"BUILD_SHARED_LIBS": "ON" if args.build_shared_lib else "OFF"}
+                  )
