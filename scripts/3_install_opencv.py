@@ -16,6 +16,14 @@ class Architecture(Enum):
     AARCH64 = "arm64-v8a"
     ARM32NEON = "armeabi-v7a"
 
+available_archs = {
+    Target.Android: [Architecture.AARCH64, Architecture.ARM32NEON],
+    Target.Windows: [Architecture.X64, Architecture.AARCH64],
+    Target.macOS: [Architecture.AARCH64, Architecture.X64],
+    Target.iOS: [Architecture.AARCH64],
+    Target.Linux: [Architecture.X64, Architecture.AARCH64, Architecture.ARM32NEON]
+}
+
 class AndroidEnvironment:
     def __init__(
             self, 
@@ -217,12 +225,18 @@ if __name__ == "__main__":
     build_root = os.path.join(deps_path, 'opencv-build')
     install_root = os.path.join(deps_path, 'opencv-install')
 
-    for target_platform in args.platform:
-        build_path = os.path.join(build_root, target_platform)
-        install_path = os.path.join(install_root, target_platform)
-        for arch in args.arch:
-            build_path = os.path.join(build_path, arch, 'shared' if args.build_shared_lib else 'static')
-            install_path = os.path.join(install_path, arch, 'shared' if args.build_shared_lib else 'static')
+    target_platforms = [Target(t) for t in args.platform]
+    target_archs = [Architecture(a) for a in args.arch]
+    for target_platform in target_platforms:
+        build_path = os.path.join(build_root, target_platform.value)
+        install_path = os.path.join(install_root, target_platform.value)
+
+        for arch in available_archs[target_platform]:
+            if arch not in target_archs:
+                continue
+                
+            build_path = os.path.join(build_path, arch.value, 'shared' if args.build_shared_lib else 'static')
+            install_path = os.path.join(install_path, arch.value, 'shared' if args.build_shared_lib else 'static')
             build(src_path, build_path, install_path, Target(target_platform), Architecture(arch),
                   {"BUILD_SHARED_LIBS": "ON" if args.build_shared_lib else "OFF"}
                   )
